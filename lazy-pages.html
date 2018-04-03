@@ -13,7 +13,7 @@
         overflow: hidden; /* because http://stackoverflow.com/questions/32639639/ios-9-mobile-safari-has-a-blinking-bug-with-transform-scale3d-and-translate3d */
       }
 
-      :host > ::content > * {
+      :host > ::slotted(*) {
         position: absolute;
         top: 0;
         left: 0;
@@ -22,16 +22,16 @@
         height: 100%;
       }
 
-      :host > ::content > :not(.iron-selected):not(.neon-animating) {
+      :host > ::slotted(:not(.iron-selected):not(.neon-animating)) {
         display: none !important;
       }
 
-      :host > ::content > .neon-animating {
+      :host > ::slotted(.neon-animating) {
         pointer-events: none;
       }
 
     </style>
-    <content id="content"></content>
+    <slot id="content"></slot>
   </template>
 </dom-module>
 
@@ -187,7 +187,7 @@ LazyTransition.prototype = {
   },
 
   isTemplate: function(node) {
-    return node && node.nodeName === 'TEMPLATE';
+    return node && (node.nodeName === 'TEMPLATE' || node.nodeName === 'DOM-IF');
   }
 
 };
@@ -502,24 +502,25 @@ Polymer({
       return null;
     }
 
-    if (template.nodeName !== 'TEMPLATE') // this is not a template, so it is also an instance
+    if (template.nodeName !== 'TEMPLATE' && template.nodeName !== 'DOM-IF') // this is not a template, so it is also an instance
       return template;
 
-    if (!template._instance) {
+    if (!template._instance && !template.__instance) {
       console.warn('template instance is null', template);
       return null;
     }
-    var instance = template._instance;
+    var instance = template._instance || template.__instance;
+    var children = instance._children || instance.children;
     var el = null;
-    for (var i=0; i<instance._children.length; i++) {
-      if (instance._children[i].nodeType === 1 && instance._children[i].nodeName !== 'LINK') {
+    for (var i=0; i<children.length; i++) {
+      if (children[i].nodeType === 1 && children[i].nodeName !== 'LINK') {
         if (el != null) {
           console.warn('dom-if children inside lazy-pages can only have a single element', template);
         } else {
-          el = instance._children[i];
+          el = children[i];
         }
       } else {
-        if (instance._children[i].nodeType === 1 && warnLinks)  {// we are a link
+        if (children[i].nodeType === 1 && warnLinks)  {// we are a link
           console.warn('<link rel="import"> elements inside templates do not work in IE11 and Edge');
         }
       }
